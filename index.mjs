@@ -1,10 +1,9 @@
 #!/bin/node
 
-const fetch = require('node-fetch');
-const parser = require('fast-xml-parser');
-const util = require('util');
-const streamPipeline = util.promisify(require('stream').pipeline);
-const fs = require('fs');
+import fetch from 'node-fetch';
+import { XMLParser } from 'fast-xml-parser';
+import { pipeline } from 'stream/promises';
+import { openSync, writeSync, existsSync, mkdirSync, writeFileSync, createWriteStream, closeSync } from 'fs';
 
 const LECTURES = [
     {title: '안전심리의 이해', path: '16ECFEEF5DEVLHFECPTX/27'},
@@ -20,25 +19,25 @@ const LECTURES = [
 ];
 
 const main = async () => {
-    const globalBatch = fs.openSync('run.bat', 'w');
-    fs.writeSync(globalBatch, 'CHCP 65001\r\n');
+    const globalBatch = openSync('run.bat', 'w');
+    writeSync(globalBatch, 'CHCP 65001\r\n');
 
     for (const [i, lecture] of LECTURES.entries()) {
         const title = `${i + 1}. ${lecture.title}`;
-        if (!fs.existsSync(title)) {
-            fs.mkdirSync(title);
+        if (!existsSync(title)) {
+            mkdirSync(title);
         }
         console.log(`[${title}]`);
 
         const res = await fetch(`http://www.safetyedu.net/econtents/Content/NEW_CONTENTS/${lecture.path}/common/config/media_url.xml`);
         const xml = await res.text();
-        const mediaUrl = parser.parse(xml, {ignoreAttributes: false});
+        const mediaUrl = new XMLParser({ignoreAttributes: false}).parse(xml);
 
-        fs.writeFileSync(`${title}/media_url.xml`, xml);
+        writeFileSync(`${title}/media_url.xml`, xml);
         console.log('media_url.xml');
 
         const caption = await fetch(`http://www.safetyedu.net/econtents/Content/NEW_CONTENTS/${lecture.path}/xml/caption.xml`);
-        await streamPipeline(caption.body, fs.createWriteStream(`${title}/caption.xml`));
+        await pipeline(caption.body, createWriteStream(`${title}/caption.xml`));
         console.log('caption.xml');
 
         const batch = [];
@@ -54,7 +53,7 @@ const main = async () => {
                     break;
                 case 'mp3':
                     const mp3 = await fetch(`http://www.safetyedu.net/econtents/Content/NEW_CONTENTS/${lecture.path}/common/mp3/${link['@_file']}`);
-                    await streamPipeline(mp3.body, fs.createWriteStream(`${title}/${link['@_file']}`));
+                    await pipeline(mp3.body, createWriteStream(`${title}/${link['@_file']}`));
                     // batch.push(`ffmpeg -y -i ../blank.mp4 -i ${link['@_file']} -ar 48000 -ac 2 -video_track_timescale 90000 -shortest ${link['@_file'].replace(/mp3$/, 'mp4')}`);
                     files.push(`file ${link['@_file'].replace(/mp3$/, 'mp4')}`);
                     console.log(link['@_file']);
@@ -62,18 +61,18 @@ const main = async () => {
             }
         }
 
-        fs.writeFileSync(`${title}/files.txt`, files.join('\r\n'));
+        writeFileSync(`${title}/files.txt`, files.join('\r\n'));
 
         // batch.push(`ffmpeg -y -f concat -safe 0 -i files.txt -c copy ${i + 1}.mp4`);
-        fs.writeFileSync(`${title}/run.bat`, batch.join('\r\n'));
+        writeFileSync(`${title}/run.bat`, batch.join('\r\n'));
 
-        fs.writeSync(globalBatch, `CD "${title}"\r\n`);
-        fs.writeSync(globalBatch, `CALL run.bat\r\n`);
-        fs.writeSync(globalBatch, `CD ..\r\n`);
+        writeSync(globalBatch, `CD "${title}"\r\n`);
+        writeSync(globalBatch, `CALL run.bat\r\n`);
+        writeSync(globalBatch, `CD ..\r\n`);
         console.log();
     };
 
-    fs.closeSync(globalBatch);
+    closeSync(globalBatch);
 };
 
 main().then(() => {process.exit(0);});
