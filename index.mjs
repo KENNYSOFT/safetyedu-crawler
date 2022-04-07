@@ -6,16 +6,14 @@ import { pipeline } from "stream/promises";
 import { openSync, writeSync, existsSync, mkdirSync, writeFileSync, createWriteStream, closeSync } from "fs";
 
 const LECTURES = [
-    { title: "안전심리의 이해", path: "16ECFEEF5DEVLHFECPTX/27" },
-    { title: "안전문화의 특성 및 개선방안", path: "16ECFEEF5DEVQERURONJ/33" },
-    { title: "사업장 내 안전 커뮤니케이션", path: "16ECFEEF5DEDBPDEJRUT/14" },
+    { title: "산업안전보건법령 체계 및 주요내용", path: "16ECFEEF5DDENKETWJYW/01" },
     { title: "사무실 근로자를 위한 작업환경 및 건강관리", path: "16ECFEEF5E0MRDOFIEKO/166" },
+    { title: "재해종류별 응급처치요령", path: "16EAB2905DDUZTDBRNCM/174" },
     { title: "일하는 사람의 보건관리", path: "16ECFEEF5DDBEVIHKWSK/08" },
+    { title: "영상표시단말기(VDT) 작업에 따른 질병예방 방안", path: "1761BEB777BBRHALGUBC/324" },
     { title: "근골격계 질환의 이해", path: "16ED47C10F6KMZEUFYJR/162" },
     { title: "직무스트레스에 의한 건강장해 예방", path: "16E8D1B6B01INOTOMFOT/169" },
-    { title: "재해종류별 응급처치요령", path: "16EAB2905DDUZTDBRNCM/174" },
-    { title: "밀폐공간 작업 시 안전조치", path: "16ECFEEF5E0UHGQPCIRX/159" },
-    { title: "영상표시단말기(VDT) 작업에 따른 질병예방 방안", path: "1761BEB777BBRHALGUBC/324" },
+    { title: "직장 내 괴롭힘 등의 예방", path: "17E0DE57A15WFHEAEDMT/544" },
 ];
 
 const processFile = async (lecture, mediaUrl, batch, type, file) => {
