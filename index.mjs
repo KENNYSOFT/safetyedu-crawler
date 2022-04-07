@@ -19,13 +19,16 @@ const LECTURES = [
 ];
 
 const main = async () => {
-    const globalBatch = openSync('run.bat', 'w');
+    if (!existsSync('data')) {
+        mkdirSync('data');
+    }
+    const globalBatch = openSync('data/run.bat', 'w');
     writeSync(globalBatch, 'CHCP 65001\r\n');
 
     for (const [i, lecture] of LECTURES.entries()) {
         const title = `${i + 1}. ${lecture.title}`;
-        if (!existsSync(title)) {
-            mkdirSync(title);
+        if (!existsSync(`data/${title}`)) {
+            mkdirSync(`data/${title}`);
         }
         console.log(`[${title}]`);
 
@@ -33,11 +36,11 @@ const main = async () => {
         const xml = await res.text();
         const mediaUrl = new XMLParser({ignoreAttributes: false}).parse(xml);
 
-        writeFileSync(`${title}/media_url.xml`, xml);
+        writeFileSync(`data/${title}/media_url.xml`, xml);
         console.log('media_url.xml');
 
         const caption = await fetch(`http://www.safetyedu.net/econtents/Content/NEW_CONTENTS/${lecture.path}/xml/caption.xml`);
-        await pipeline(caption.body, createWriteStream(`${title}/caption.xml`));
+        await pipeline(caption.body, createWriteStream(`data/${title}/caption.xml`));
         console.log('caption.xml');
 
         const batch = [];
@@ -53,7 +56,7 @@ const main = async () => {
                     break;
                 case 'mp3':
                     const mp3 = await fetch(`http://www.safetyedu.net/econtents/Content/NEW_CONTENTS/${lecture.path}/common/mp3/${link['@_file']}`);
-                    await pipeline(mp3.body, createWriteStream(`${title}/${link['@_file']}`));
+                    await pipeline(mp3.body, createWriteStream(`data/${title}/${link['@_file']}`));
                     // batch.push(`ffmpeg -y -i ../blank.mp4 -i ${link['@_file']} -ar 48000 -ac 2 -video_track_timescale 90000 -shortest ${link['@_file'].replace(/mp3$/, 'mp4')}`);
                     files.push(`file ${link['@_file'].replace(/mp3$/, 'mp4')}`);
                     console.log(link['@_file']);
@@ -61,14 +64,14 @@ const main = async () => {
             }
         }
 
-        writeFileSync(`${title}/files.txt`, files.join('\r\n'));
+        writeFileSync(`data/${title}/files.txt`, files.join('\r\n'));
 
         // batch.push(`ffmpeg -y -f concat -safe 0 -i files.txt -c copy ${i + 1}.mp4`);
-        writeFileSync(`${title}/run.bat`, batch.join('\r\n'));
+        writeFileSync(`data/${title}/run.bat`, batch.join('\r\n'));
 
-        writeSync(globalBatch, `CD "${title}"\r\n`);
+        writeSync(globalBatch, `PUSHD "${title}"\r\n`);
         writeSync(globalBatch, `CALL run.bat\r\n`);
-        writeSync(globalBatch, `CD ..\r\n`);
+        writeSync(globalBatch, `POPD\r\n`);
         console.log();
     };
 
